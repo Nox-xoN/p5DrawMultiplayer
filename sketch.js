@@ -28,6 +28,11 @@ function draw() {
     fill(0, 255, 0);
     text('esc -> clear', 25, 25);
 
+    push();
+    circle(mouseX, mouseY, 299);
+    //clear();
+    pop();
+
     if (mouseIsPressed || mDown) {
         socket.emit('clientLines', {
             x1: mouseX,
