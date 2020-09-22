@@ -18,9 +18,8 @@ var SOCKET_LIST = {};
 var io = require("socket.io")
     (serv, {});
 
-function Player(id, color) {
+function Player(id) {
     this.id = id;
-    this.color = color;
 
     Player.list[id] = this;
 }
@@ -31,8 +30,8 @@ function Line(x1, y1, x2, y2, color, size = 1) {
     this.y1 = y1;
     this.x2 = x2;
     this.y2 = y2;
-    this.color = color;
     this.size = size;
+    this.color = color;
 
     Line.list.push(this);
 }
@@ -41,12 +40,7 @@ Line.list = [];
 io.sockets.on("connection", function (socket) {
     socket.id = uuidv4();
     SOCKET_LIST[socket.id] = socket;
-
-    let p = new Player(socket.id, {
-        r: Math.floor(Math.random() * 255),
-        g: Math.floor(Math.random() * 255),
-        b: Math.floor(Math.random() * 255)
-    });
+    new Player(socket.id);
 
     console.log("Player with id: " + socket.id + " connected.");
     if (Line.list.length > 0) {
@@ -58,24 +52,22 @@ io.sockets.on("connection", function (socket) {
                 y1: line.y1,
                 x2: line.x2,
                 y2: line.y2,
-                color: line.color,
                 size: line.size,
+                color: line.color,
             });
         }
         socket.emit("load", pack);
     }
 
     socket.on("clientLines", function (line) {
-        let sendingPlayer = Player.list[socket.id];
-        new Line(line.x1, line.y1, line.x2, line.y2, sendingPlayer.color, line.size > 0 && line.size < 51 ? line.size : 1);
-
+        new Line(line.x1, line.y1, line.x2, line.y2, line.color, line.size > 0 && line.size < 51 ? line.size : 1);
         socket.broadcast.emit("serverLines", {
             x1: line.x1,
             y1: line.y1,
             x2: line.x2,
             y2: line.y2,
             size: line.size,
-            color: sendingPlayer.color
+            color: line.color
         });
     });
 
@@ -103,8 +95,8 @@ io.sockets.on("connection", function (socket) {
                     y1: line.y1,
                     x2: line.x2,
                     y2: line.y2,
-                    color: line.color,
                     size: line.size,
+                    color: line.color,
                 });
             }
             socket.emit("load", pack);
