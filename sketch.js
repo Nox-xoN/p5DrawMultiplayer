@@ -21,8 +21,6 @@ function setup() {
     socket.on("clear", function () {
         background(0);
     });
-
-    c = circle(222, 222, 55);
 }
 
 function draw() {
