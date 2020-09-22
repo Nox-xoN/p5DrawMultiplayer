@@ -12,26 +12,26 @@ let color = {};
 let lColor = {};
 let erase = false;
 
-const BLACK = {
-    r: 0,
-    g: 0,
-    b: 0
-}
+let cursorC;
 
 function setup() {
+    cursorC = document.getElementById('cursorCircle');
+    document.addEventListener('mousemove', function (event) {
+        var x = event.clientX;
+        var y = event.clientY;
+        cursorC.style.left = x + "px";
+        cursorC.style.top = y + "px";
+    });
+
     canvas = createCanvas(windowWidth, windowHeight);
     cSatSlider = createSlider(0, 100, 100);
     cBrigSlider = createSlider(0, 100, 100);
     cSatSlider.input(changeSaturation);
     cBrigSlider.input(changeBrightness);
-    cSatSlider.position(10, windowHeight - 100);
-    cBrigSlider.position(10, windowHeight - 80);
+    cSatSlider.position(10, windowHeight - 80);
+    cBrigSlider.position(10, windowHeight - 60);
     background(0);
-    color = {
-        r: Math.floor(Math.random() * 255),
-        g: Math.floor(Math.random() * 255),
-        b: Math.floor(Math.random() * 255)
-    }
+    changeColor("RANDOM");
 
     socket.on("load", function (lines) {
         for (let i = 0; i < lines.length; i++) {
@@ -64,10 +64,12 @@ function draw() {
 
 function mouseWheel(event) {
     if (event.delta > 0) {
-        size <= 1 ? size = 1 : size = size - 2;
+        size <= 2 ? size = 1 : size = size - 2;
     } else {
-        size >= 50 ? size = 50 : size = size + 2;
+        size >= 49 ? size = 50 : size = size + 2;
     }
+    cursorC.style.height = size + "px";
+    cursorC.style.width = size + "px";
 }
 
 function drawLine(l) {
@@ -91,7 +93,10 @@ function clearCanvas() {
 function keyPressed() {
     num = keyCode;
     if (num === 27) { //esc
-        clearCanvas();
+        let r = confirm("Are you sure you want to CLEAR the canvas for EVERYONE?");
+        if (r) {
+            clearCanvas();
+        }
     } else if (num === 80) { //p
         saveCanvas("drawing", "png")
     }
@@ -130,28 +135,51 @@ function mouseClicked() {
     }
 }
 
-function changeColor() {
-    let c = get(mouseX, mouseY);
-    color = {
-        r: c[0],
-        g: c[1],
-        b: c[2],
+function changeColor(MODE) {
+
+    switch (MODE) {
+        case "BLACK":
+            color = {
+                r: 0,
+                g: 0,
+                b: 0,
+            }
+            break;
+        case "RANDOM":
+            color = {
+                r: Math.floor(Math.random() * 255),
+                g: Math.floor(Math.random() * 255),
+                b: Math.floor(Math.random() * 255)
+            }
+            break;
+        case "OLD":
+            color = lColor;
+            break;
+        default:
+            let c = get(mouseX, mouseY);
+            color = {
+                r: c[0],
+                g: c[1],
+                b: c[2],
+            }
+            break;
     }
+    cursorC.style.border = "solid 2px rgb(" + color.r + "," + color.g + "," + color.b + ")";
 }
 
 function drawMouse() {
     if ((mouseIsPressed || mDown) && mouseY < windowHeight - 30) {
+
         if (mouseButton === LEFT) {
             if (erase) {
-                color = lColor;
+                changeColor("OLD");
                 erase = false;
             }
         } else if (mouseButton === RIGHT && !erase) {
             lColor = color;
-            color = BLACK;
+            changeColor("BLACK")
             erase = true;
         }
-
         socket.emit('clientLines', {
             x1: mouseX,
             y1: mouseY,
@@ -160,6 +188,9 @@ function drawMouse() {
             size: size,
             color: color,
         });
+    } else if (!mouseIsPressed && erase) {
+        changeColor("OLD");
+        erase = false;
     }
 }
 
